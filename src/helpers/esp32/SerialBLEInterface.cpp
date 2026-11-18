@@ -126,6 +126,14 @@ void SerialBLEInterface::onWrite(BLECharacteristic* pCharacteristic, esp_ble_gat
   uint8_t* rxValue = pCharacteristic->getData();
   int len = pCharacteristic->getLength();
 
+  // The RX characteristic requires an encrypted+MITM link, so a write can only arrive once
+  // pairing has succeeded. On a first-time pairing the auth-complete callback can fire after
+  // the app's first request, which made writeFrame() drop the reply (app: "getDeviceInfo timeout").
+  if (!deviceConnected) {
+    BLE_DEBUG_PRINTLN("onWrite() before auth-complete callback; marking connected");
+    deviceConnected = true;
+  }
+
   if (len > MAX_FRAME_SIZE) {
     BLE_DEBUG_PRINTLN("ERROR: onWrite(), frame too big, len=%d", len);
   } else {
