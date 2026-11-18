@@ -23,6 +23,17 @@ void SerialBLEInterface::begin(const char* prefix, char* name, uint32_t pin_code
   char dev_name[32+16];
   sprintf(dev_name, "%s%s", prefix, name);
 
+#ifdef BLE_MAC_XOR
+  // Shift the radio MAC (and so the BLE address) away from the factory one, so phones
+  // holding a stale bond for the old address (e.g. from previous firmware) see a new device.
+  {
+    uint8_t mac[6];
+    esp_efuse_mac_get_default(mac);
+    mac[5] ^= (uint8_t)(BLE_MAC_XOR);
+    esp_base_mac_addr_set(mac);
+  }
+#endif
+
   // Create the BLE Device
   BLEDevice::init(dev_name);
   BLEDevice::setSecurityCallbacks(this);
